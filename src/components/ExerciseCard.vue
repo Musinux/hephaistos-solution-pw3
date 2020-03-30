@@ -14,6 +14,7 @@
     <div class="d-flex flex-no-wrap justify-space-between">
       <div>
         <v-card-title class="subtitle-1">
+          <v-icon v-if="draggable" style="margin-right: 0.5em">mdi-drag-horizontal</v-icon>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
               <span v-on="on">{{ s(exercise.title) }}</span>
@@ -51,7 +52,7 @@
                 <template v-slot:activator="{ on }">
                   <v-icon v-on="on">mdi-check</v-icon>
                 </template>
-                <span>Validé</span>
+                <span>Tests Validés</span>
               </v-tooltip>
             </div>
           </div>
@@ -62,10 +63,13 @@
 </template>
 <script>
 import { mapGetters } from 'vuex'
-
 export default {
   props: {
     current: {
+      type: Boolean,
+      default: false
+    },
+    draggable: {
       type: Boolean,
       default: false
     },

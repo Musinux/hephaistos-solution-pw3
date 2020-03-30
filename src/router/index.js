@@ -4,6 +4,7 @@ import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Module from '../views/Module.vue'
 import DoExercise from '../views/DoExercise.vue'
+import ExerciseEditorView from '../views/ExerciseEditorView.vue'
 import store from '../store/index'
 
 Vue.use(VueRouter)
@@ -36,6 +37,12 @@ const routes = [
     path: '/session/:sessionId/do/:exerciseId',
     name: 'DoExercise',
     component: DoExercise,
+    beforeEnter
+  },
+  {
+    path: '/session/:sessionId/edit/:exerciseId?',
+    name: 'ExerciseEditor',
+    component: ExerciseEditorView,
     beforeEnter
   },
   {
