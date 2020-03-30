@@ -448,42 +448,6 @@ export default {
       return false
     },
 
-    handleKeyboardCallback (data, hash, keyString, keyCode, event) {
-      if (Math.abs(keyCode) === KEY_ENTER) {
-        // if we are on the edge of a range, we allow pressing enter
-        // but if we are not on an edge and in the current selection,
-        // disable it
-        if (this.onEnd(this.editor.getCursorPosition()) ||
-          !this.currentSelectionHasIntersection()) {
-          this.moveLowerRanges(this.editor.getCursorPosition(), 1)
-          return false
-        }
-
-        if (!this.freezeReadOnlyRanges) {
-          this.moveLowerRanges(this.editor.getCursorPosition(), 1)
-          return false
-        }
-      }
-
-      if (hash === -1 || (keyCode >= KEY_LEFT_ARROW && keyCode <= KEY_DOWN_ARROW)) {
-        return false
-      }
-
-      if (this.currentSelectionHasIntersection()) {
-        if (!this.freezeReadOnlyRanges) {
-          return false
-        }
-        return { command: 'null', passEvent: false }
-      }
-    },
-
-    setKeyboardHandler () {
-      this.editor.keyBinding.addKeyboardHandler({
-        handleKeyboard: this.handleKeyboardCallback.bind(this)
-      })
-      this.readonlyHandlerSet = true
-    },
-
     addMarker (editor, range) {
       let css
       switch (range.state) {
@@ -496,6 +460,45 @@ export default {
       }
       // we save the id of the range to delete it afterwards if needed
       range.id = editor.session.addMarker(range, css)
+    },
+
+    /**
+     * Here is defined the code to handle click on left zones
+     * Its goal is to define ranges that are either readonly or kept as
+     * information to the user
+     */
+    makeReadOnlyRangesEditable () {
+      const ranges = this.ranges
+      this.editor.on('guttermousedown', (e) => {
+        const target = e.domEvent.target
+
+        if (target.className.indexOf('ace_gutter-cell') === -1 ||
+            !e.editor.isFocused() ||
+            e.clientX > 25 + target.getBoundingClientRect().left) {
+          return
+        }
+
+        const { row } = e.getDocumentPosition()
+        const breakpoints = e.editor.session.getBreakpoints()
+
+        // If there's a breakpoint already defined,
+        // it should be removed, offering the toggle feature
+        if (typeof breakpoints[row] === 'undefined') {
+          this.lastClickedRow = row
+          this.extendReadOnlyZones(e.editor, ranges, row)
+          e.editor.session.setBreakpoint(row, REGION_RO)
+        } else {
+          if (this.lastClickedRow === row) {
+            this.lastClickedRow = row
+            this.toggleRange(row)
+          } else {
+            this.lastClickedRow = -1
+            this.shrinkReadOnlyZones(e.editor, ranges, row)
+            e.editor.session.clearBreakpoint(row)
+          }
+        }
+        this.onChange({}, true) // force
+      })
     },
 
     /**
@@ -576,45 +579,6 @@ export default {
     },
 
     /**
-     * Here is defined the code to handle click on left zones
-     * Its goal is to define ranges that are either readonly or kept as
-     * information to the user
-     */
-    makeReadOnlyRangesEditable () {
-      const ranges = this.ranges
-      this.editor.on('guttermousedown', (e) => {
-        const target = e.domEvent.target
-
-        if (target.className.indexOf('ace_gutter-cell') === -1 ||
-            !e.editor.isFocused() ||
-            e.clientX > 25 + target.getBoundingClientRect().left) {
-          return
-        }
-
-        const { row } = e.getDocumentPosition()
-        const breakpoints = e.editor.session.getBreakpoints()
-
-        // If there's a breakpoint already defined,
-        // it should be removed, offering the toggle feature
-        if (typeof breakpoints[row] === 'undefined') {
-          this.lastClickedRow = row
-          this.extendReadOnlyZones(e.editor, ranges, row)
-          e.editor.session.setBreakpoint(row, REGION_RO)
-        } else {
-          if (this.lastClickedRow === row) {
-            this.lastClickedRow = row
-            this.toggleRange(row)
-          } else {
-            this.lastClickedRow = -1
-            this.shrinkReadOnlyZones(e.editor, ranges, row)
-            e.editor.session.clearBreakpoint(row)
-          }
-        }
-        this.onChange({}, true) // force
-      })
-    },
-
-    /**
      * we have multiple types of ranges, this function
      * has the goal to toggle the type of the range depending on
      * its current type
@@ -624,6 +588,42 @@ export default {
       range.state = range.state === REGION_RO ? REGION_NOREAD : REGION_RO
       this.editor.session.removeMarker(range.id)
       this.addMarker(this.editor, range)
+    },
+
+    handleKeyboardCallback (data, hash, keyString, keyCode, event) {
+      if (Math.abs(keyCode) === KEY_ENTER) {
+        // if we are on the edge of a range, we allow pressing enter
+        // but if we are not on an edge and in the current selection,
+        // disable it
+        if (this.onEnd(this.editor.getCursorPosition()) ||
+          !this.currentSelectionHasIntersection()) {
+          this.moveLowerRanges(this.editor.getCursorPosition(), 1)
+          return false
+        }
+
+        if (!this.freezeReadOnlyRanges) {
+          this.moveLowerRanges(this.editor.getCursorPosition(), 1)
+          return false
+        }
+      }
+
+      if (hash === -1 || (keyCode >= KEY_LEFT_ARROW && keyCode <= KEY_DOWN_ARROW)) {
+        return false
+      }
+
+      if (this.currentSelectionHasIntersection()) {
+        if (!this.freezeReadOnlyRanges) {
+          return false
+        }
+        return { command: 'null', passEvent: false }
+      }
+    },
+
+    setKeyboardHandler () {
+      this.editor.keyBinding.addKeyboardHandler({
+        handleKeyboard: this.handleKeyboardCallback.bind(this)
+      })
+      this.readonlyHandlerSet = true
     }
   }
 }
