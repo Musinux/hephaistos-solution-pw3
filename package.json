@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "ace-builds": "^1.4.8",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "core-js": "^3.6.4",
     "tiptap": "^1.26.6",
     "tiptap-extensions": "^1.28.6",
